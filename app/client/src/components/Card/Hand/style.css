@@ -1,0 +1,7 @@
+.hand {
+    display: flex;
+}
+
+.hand > .card:not(:first-child) {
+    margin-left: -8rem;
+}

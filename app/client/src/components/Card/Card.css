@@ -1,0 +1,31 @@
+.card {
+    width: 10rem;
+    height: 15rem;
+    border: 1px solid black;
+    background-color: white;
+}
+
+.card > .content {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.card > .content > .middle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.card > .content > .top {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.card > .content > .bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
