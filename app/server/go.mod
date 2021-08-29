@@ -1,4 +1,4 @@
-module api
+module cardgames
 
 go 1.16
 

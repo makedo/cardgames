@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"api/domain/cards"
-	"api/domain/games/durak"
-	
+	"cardgames/domain/cards"
+	"cardgames/domain/games/durak"
+
 	"encoding/json"
 	"net/http"
 

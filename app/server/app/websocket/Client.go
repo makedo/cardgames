@@ -12,6 +12,7 @@ type Client struct {
 
 func (c *Client) Write(message *Message) error {
 	var err = c.Conn.WriteJSON(message)
+	
 	return err
 }
 

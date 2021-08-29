@@ -1,13 +1,13 @@
 package durak
 
 import (
-	"api/domain/cards"
+	"cardgames/domain/cards"
 	"errors"
 )
 
 type Hand struct {
-	Id string
-	Cards  []cards.Card
+	Id    string
+	Cards []cards.Card
 }
 
 type Table struct {

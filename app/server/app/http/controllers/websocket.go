@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"api/app/websocket"
+	"cardgames/app/websocket"
 
 	"fmt"
 	"log"

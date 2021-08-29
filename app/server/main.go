@@ -1,7 +1,7 @@
 package main
 
 import (
-	controllers "api/app/http/controllers"
+	controllers "cardgames/app/http/controllers"
 	"net/http"
 )
 
