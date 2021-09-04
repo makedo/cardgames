@@ -2,23 +2,18 @@ package durak
 
 import (
 	"cardgames/domain/cards"
-	"errors"
 )
-
-type Hand struct {
-	Id    string
-	Cards []cards.Card
-}
 
 type Table struct {
 	Cards [][2]cards.Card `json:"cards"`
 }
 
 type State struct {
-	table Table
-	deck  cards.Deck
-	hands []Hand
-	trump cards.Card
+	table   Table
+	deck    cards.Deck
+	trump   cards.Card
+	started bool
+	players []*Player
 }
 
 type SerializableState struct {
@@ -29,42 +24,103 @@ type SerializableState struct {
 	Hands      []uint       `json:"hands"`
 }
 
-func NewState(deckAmount int, playerIds []string) *State {
+func NewState(deckAmount int, players []*Player) *State {
 	var deck = cards.NewDeck(deckAmount).Shuffle()
 	var trump = deck.Last()
-	var hands = make([]Hand, len(playerIds))
-
-	var i = 0
-	for _, playerId := range playerIds {
-		hands[i] = Hand{Id: playerId, Cards: deck.Pop(6)}
-		i++
-	}
 
 	return &State{
-		table: Table{},
-		deck:  *deck,
-		hands: hands,
-		trump: *trump,
+		table:   Table{},
+		deck:    *deck,
+		trump:   *trump,
+		started: false,
+		players: players,
 	}
 }
 
-func (s *State) ToSerializable(currentPlayerId string) (*SerializableState, error) {
-	var myHand *Hand = nil
-	var hands = make([]uint, len(s.hands)-1)
+func (s *State) Start() {
+	s.started = true
+}
 
-	var i = 0
-	for _, hand := range s.hands {
-		if hand.Id != currentPlayerId {
-			hands[i] = uint(len(hand.Cards))
-			i++
-		} else {
-			myHand = &hand
+func (s *State) isStarted() bool {
+	return s.started
+}
+
+func (s *State) SetPlayerReady(playerId string) {
+	var player, exist = s.GetPlayer(playerId)
+	if exist {
+		player.Ready = true
+	}
+}
+
+func (s *State) AreAllPlayersReady() bool {
+	for _, player := range s.players {
+		if false == player.Ready {
+			return false
 		}
 	}
 
-	if nil == myHand {
-		return nil, errors.New("can't find my hand")
+	return true
+}
+
+func (s *State) AddPlayer(playerId string) {
+	if _, exists := s.GetPlayer(playerId); exists {
+		return
 	}
+
+	var player = &Player{
+		Id:   playerId,
+		Hand: &cards.Hand{Cards: s.deck.Pop(6)},
+	}
+	s.players = append(s.players, player)
+}
+
+func (s *State) RemovePlayer(playerId string) {
+	var newPlayers []*Player
+
+	for _, player := range s.players {
+		if player.Id != playerId {
+			newPlayers = append(newPlayers, player)
+		}
+	}
+
+	s.players = newPlayers
+}
+
+func (s *State) GetPlayer(playerId string) (*Player, bool) {
+	for _, player := range s.players {
+		if player.Id == playerId {
+			return player, true
+		}
+	}
+
+	return nil, false
+}
+
+func (s *State) GetAmountOfPlayers() int {
+	return len(s.players)
+}
+
+func (s *State) GetPlayers() []*Player {
+	return s.players
+}
+
+func (s *State) ToSerializable(currentPlayerId string) (*SerializableState, error) {
+	var myHand cards.Hand
+	var hands = make([]uint, len(s.players)-1)
+
+	var i = 0
+	for _, player := range s.players {
+		if player.Id != currentPlayerId {
+			hands[i] = uint(len(player.Hand.Cards))
+			i++
+		} else {
+			myHand = *player.Hand
+		}
+	}
+
+	// if (myHand == nil) {
+	// 	return nil, errors.New("can't find my hand")
+	// }
 
 	return &SerializableState{
 		Table:      &s.table,

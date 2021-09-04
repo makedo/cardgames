@@ -1,8 +1,7 @@
-import {useState, useEffect} from "react";
+import {useEffect} from "react";
 import {useDrop} from "react-dnd";
-
-import api from "./api";
-import {useWebsockets} from "../../websockets/hooks";
+import User from "../../service/User";
+import {connect, send} from "../../websockets";
 
 export function useDurakCardDrop(onDrop) {
   return useDrop(() => ({
@@ -20,40 +19,49 @@ export function useDurakCardDrop(onDrop) {
   }), []);
 }
 
-export function useDurakState() {
-  const [state, setState] = useState(null);
-
-  useEffect(() => {
-    const fetchState = async () => {
-      const state = await api('/durak');
-      setState(state);
-    }
-
-    fetchState();
-  }, []);
-  
-  return [state, setState];
-}
-
 const MESSAGE_SELF_CONNECTED = 'self_connected';
-const MESSAGE_READY = 'reay';
+const MESSAGE_CONNECTED = 'connected';
+const MESSAGE_READY = 'ready';
+const MESSAGE_STATE = 'state'
+const MESSAGE_ERROR = 'error'
 
-const onMessageReceive = function(message) {
+const onMessage = (setState, setError) => (message) => {
   console.log('MESSSAGE RECEIVED');
   console.log(message);
 
   switch(message.type) {
+    
     case MESSAGE_SELF_CONNECTED:
-      localStorage.setItem("id", message.data.id);
+      User.setId(message.data.playerId)
     break;
-    case MESSAGE_READY:
-      
+
+    case MESSAGE_STATE:
+      setState(message.data)
     break;
+
+    case MESSAGE_ERROR:
+      setError(message.data)
+    break;
+
     default:
-      console.log(message)
+      return
   }
 }
 
-export function useDurakWebsockets() {
-  return useWebsockets(onMessageReceive);
+const onOpen = () => {
+  send(`{"type": "${MESSAGE_CONNECTED}", "data": {"playerId": "${User.getId()}"}}`)
+}
+
+export function useDurak(setState, setError) {
+  useEffect(() => {
+    connect(
+      onMessage(setState, setError),
+      onOpen,
+      {playerId: User.getId()})
+  }, [])
+}
+
+export const onReady = (callback) => () => {
+  send(`{"type": "${MESSAGE_READY}", "data": {"playerId": "${User.getId()}"}}`);
+  callback()
 }

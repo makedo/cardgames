@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"cardgames/app/websocket"
+	"cardgames/domain/games/durak"
 
 	"fmt"
 	"log"
@@ -17,12 +18,13 @@ var upgrader = gorillaWebsocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func read(client *websocket.Client) {
-	client.Pool.Register <- client
+var handler = durak.NewHandler() //@todo choose handler according to a game
 
+func read(client *websocket.Client) {
+
+	handler.Connect(client)
 	defer func() {
-		client.Pool.Unregister <- client
-		client.Conn.Close()
+		handler.Disconnect(client)
 	}()
 
 	for {
@@ -32,7 +34,7 @@ func read(client *websocket.Client) {
 			return
 		}
 
-		client.Pool.Broadcast <- *message
+		handler.Handle(client, message)
 		fmt.Printf("Message Received: %+v\n", message)
 	}
 }
@@ -49,12 +51,25 @@ func Websocket() func(http.ResponseWriter, *http.Request) {
 			fmt.Fprintf(w, "%+v\n", err)
 		}
 
-		client := &websocket.Client{
-			Id:   uuid.New().String(),
-			Conn: conn,
-			Pool: pool,
-		}
+		var client = getClient(r, conn, pool)
 
 		go read(client)
+	}
+}
+
+func getClient(r *http.Request, conn *gorillaWebsocket.Conn, pool *websocket.Pool) *websocket.Client {
+	var query = r.URL.Query()["playerId"]
+	var playerId string
+
+	if len(query) > 0 {
+		playerId = query[0]
+	} else {
+		playerId = uuid.New().String()
+	}
+
+	return &websocket.Client{
+		Id:   playerId,
+		Conn: conn,
+		Pool: pool,
 	}
 }

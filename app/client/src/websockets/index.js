@@ -1,18 +1,36 @@
 const WS_HOST = 'localhost:8080/ws';
 const WS_URL = "ws://" + WS_HOST;
 
-var socket = new WebSocket(WS_URL);
+var socket = null; 
+function getSocket(params = {}) {
 
-let connect = onMessageReceive => {
+  let qs = Object.keys(params)
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+  
+  if (qs) {
+    qs = '?' + qs
+  }
+
+  if (null === socket) {
+    socket = new WebSocket(WS_URL + qs);
+  }
+
+  return socket;
+}
+
+export function connect(onMessage, onOpen, params = {}) {
   console.log("connecting");
+  socket = getSocket(params)
 
   socket.onopen = (e) => {
     console.log("Successfully Connected");
+    onOpen()
   };
 
   socket.onmessage = e => {
     const message = JSON.parse(e.data);
-    onMessageReceive(message);
+    onMessage(message);
   };
 
   socket.onclose = event => {
@@ -24,9 +42,8 @@ let connect = onMessageReceive => {
   };
 };
 
-let sendMessage = message => {
-  console.log("sending msg: ", message);
-  socket.send(message);
-};
-
-export { connect, sendMessage };
+export function send(message) {
+  console.log("MESSAGE_SENT");
+  console.log(message);
+  return socket.send(message);
+}

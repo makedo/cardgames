@@ -7,7 +7,6 @@ import (
 
 func initRoutes() {
 	http.HandleFunc("/deck", controllers.GetDeck)
-	http.HandleFunc("/durak", controllers.GetState)
 	http.HandleFunc("/ws", controllers.Websocket())
 }
 
