@@ -14,12 +14,14 @@ const MIN_RANK = Rank(2)
 const MAX_RANK = Rank(14)
 
 type Card struct {
+	Id int      `json:"id"`
 	Suite Suite `json:"suite"`
-	Rank Rank `json:"rank"`
+	Rank Rank   `json:"rank"`
 }
 
-func NewCard(suite Suite, rank Rank) *Card {
+func NewCard(id int, suite Suite, rank Rank) *Card {
 	return &Card{
+		Id: id,
 		Suite:suite,
 		Rank: rank,
 	}

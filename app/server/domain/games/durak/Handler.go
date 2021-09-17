@@ -91,12 +91,56 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		}
 
 		h.state.Start()
+
 		for client, _ := range client.Pool.Clients {
 			if err := h.broadcastState(client); nil != err {
 				log.Fatal(err)
 			}
 		}
 
+		return
+
+	case websocket.MESSAGE_TYPE_MOVE:
+		var playerId = client.Id
+		var data = message.GetData()
+
+		//@TODO separate message type and cast map to type
+		var cardData = data["card"].(map[string]interface{})
+		cardId, ok := cardData["id"]
+		if !ok {
+			log.Println("Wrong structure of move message")
+			return
+		}
+
+		cardIdInt, ok := cardId.(float64)
+		if !ok {
+			log.Printf("Got data of type %T but wanted int for card.id", cardIdInt)
+			return
+		}
+
+		var place *int
+		var placeData = data["place"]
+		if nil != placeData {
+			placeDataFloat, ok := placeData.(float64)
+			if !ok {
+				log.Printf("Got data of type %T but wanted int or null for place", placeDataFloat)
+				return
+			}
+			var placeInt = int(placeDataFloat)
+			place = &placeInt
+		}
+
+		var error = h.state.Move(playerId, int(cardIdInt), place)
+		if nil != error {
+			log.Println(error)
+			return
+		}
+
+		for client, _ := range client.Pool.Clients {
+			if err := h.broadcastState(client); nil != err {
+				log.Fatal(err)
+			}
+		}
 		return
 	}
 
@@ -118,6 +162,7 @@ func (h *Handler) Disconnect(client *websocket.Client) {
 			fmt.Println("TIMER FIRED")
 			h.state.RemovePlayer(playerId)
 			h.state = NewState(CARDS_IN_DECK, h.state.GetPlayers())
+			//@TODO send RESTART message to other players
 		}()
 	}
 }
@@ -128,7 +173,6 @@ func (h *Handler) Connect(client *websocket.Client) {
 
 func (h *Handler) broadcastState(client *websocket.Client) error {
 	var _, hasPlayer = h.state.GetPlayer(client.Id)
-
 	if false == hasPlayer {
 		return nil
 	}

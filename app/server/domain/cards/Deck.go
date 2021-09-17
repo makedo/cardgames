@@ -17,7 +17,7 @@ func NewDeck(amount int) *Deck {
 
 	for _, suite := range SuiteList {
 		for rank := minRank; rank <= MAX_RANK; rank++ {
-			cards[i] = *NewCard(suite, rank)
+			cards[i] = *NewCard(i, suite, rank)
 			i++
 		}
 	}

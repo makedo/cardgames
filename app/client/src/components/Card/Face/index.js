@@ -8,7 +8,7 @@ function parseCard(card) {
   return [card.suite, card.rank];
 }
 
-const Face = React.forwardRef(({card, className, style}, ref) => {
+const Face = ({card, className, style}, ref) => {
   const [suite, rank] = parseCard(card);
 
   return <div ref={ref} style={style} className={["card", className].filter((c) => !!c).join(' ')} >
@@ -23,6 +23,6 @@ const Face = React.forwardRef(({card, className, style}, ref) => {
       <div className="bottom"><Rank rank={rank} /><Suite suite={suite} /></div>
     </div>
   </div>
-});
+};
 
-export default Face;
+export default React.forwardRef(Face);

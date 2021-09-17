@@ -51,17 +51,17 @@ func Websocket() func(http.ResponseWriter, *http.Request) {
 			fmt.Fprintf(w, "%+v\n", err)
 		}
 
-		var client = getClient(r, conn, pool)
+		var client = createClient(r, conn, pool)
 
 		go read(client)
 	}
 }
 
-func getClient(r *http.Request, conn *gorillaWebsocket.Conn, pool *websocket.Pool) *websocket.Client {
+func createClient(r *http.Request, conn *gorillaWebsocket.Conn, pool *websocket.Pool) *websocket.Client {
 	var query = r.URL.Query()["playerId"]
 	var playerId string
 
-	if len(query) > 0 {
+	if len(query) > 0 && len(query[0]) > 0 {
 		playerId = query[0]
 	} else {
 		playerId = uuid.New().String()

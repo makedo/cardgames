@@ -1,3 +1,5 @@
+import User from "../service/User";
+
 const WS_HOST = 'localhost:8080/ws';
 const WS_URL = "ws://" + WS_HOST;
 
@@ -5,7 +7,7 @@ var socket = null;
 function getSocket(params = {}) {
 
   let qs = Object.keys(params)
-    .map(key => `${key}=${params[key]}`)
+    .map(key => `${key}=${params[key] === null || typeof params[key] === 'undefined' ? '' : params[key]}`)
     .join('&');
   
   if (qs) {
@@ -43,7 +45,14 @@ export function connect(onMessage, onOpen, params = {}) {
 };
 
 export function send(message) {
+  
+  if (typeof message !== 'string') {
+    message = JSON.stringify(message)
+  }
   console.log("MESSAGE_SENT");
   console.log(message);
+  console.log(User.getId());
+  console.log(typeof User.getId());
+
   return socket.send(message);
 }

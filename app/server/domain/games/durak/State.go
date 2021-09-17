@@ -2,11 +2,8 @@ package durak
 
 import (
 	"cardgames/domain/cards"
+	"errors"
 )
-
-type Table struct {
-	Cards [][2]cards.Card `json:"cards"`
-}
 
 type State struct {
 	table   Table
@@ -29,7 +26,7 @@ func NewState(deckAmount int, players []*Player) *State {
 	var trump = deck.Last()
 
 	return &State{
-		table:   Table{},
+		table:   *NewTable(),
 		deck:    *deck,
 		trump:   *trump,
 		started: false,
@@ -38,6 +35,16 @@ func NewState(deckAmount int, players []*Player) *State {
 }
 
 func (s *State) Start() {
+
+	for i, player := range s.players {
+		if 0 == i {
+			player.State = PLAYER_STATE_ATTAKER
+		} else {
+			player.State = PLAYER_STATE_DEFENDER
+		}
+		player.Hand = &cards.Hand{Cards: s.deck.Pop(6)}
+	}
+
 	s.started = true
 }
 
@@ -68,8 +75,7 @@ func (s *State) AddPlayer(playerId string) {
 	}
 
 	var player = &Player{
-		Id:   playerId,
-		Hand: &cards.Hand{Cards: s.deck.Pop(6)},
+		Id: playerId,
 	}
 	s.players = append(s.players, player)
 }
@@ -104,23 +110,65 @@ func (s *State) GetPlayers() []*Player {
 	return s.players
 }
 
+func (s *State) Move(playerId string, cardId int, place *int) error {
+	var player, hasPlayer = s.GetPlayer(playerId)
+	if !hasPlayer {
+		return errors.New("Player not found")
+	}
+
+	card, hasCard := player.Hand.GetCardById(cardId)
+	if !hasCard {
+		return errors.New("Card id not found")
+	}
+
+	if player.IsAttaker() {
+		if false == s.table.HasCards() || s.table.HasCardOfSameRank(card) {
+			s.table.AddCard(card, nil)
+			player.Hand.PopCardById(cardId)
+			return nil
+		}
+
+		return errors.New("Attaker can not make move with card")
+	}
+
+	if player.IsDefender() {
+		if nil == place {
+			return errors.New("Place is nil")
+		}
+
+		var placeCard = s.table.GetCardFromPlace(*place)
+
+		if ((placeCard.Suite == card.Suite && card.Rank > placeCard.Rank) ||
+			(card.Suite == s.trump.Suite && placeCard.Suite != s.trump.Suite)) {
+			s.table.AddCard(card, place)
+			player.Hand.PopCardById(cardId)
+			return nil
+		}
+
+		return errors.New("Defender can not make move with card")
+	}
+
+	return nil
+}
+
 func (s *State) ToSerializable(currentPlayerId string) (*SerializableState, error) {
-	var myHand cards.Hand
+	var myHand *cards.Hand
 	var hands = make([]uint, len(s.players)-1)
 
 	var i = 0
+
 	for _, player := range s.players {
 		if player.Id != currentPlayerId {
 			hands[i] = uint(len(player.Hand.Cards))
 			i++
 		} else {
-			myHand = *player.Hand
+			myHand = player.Hand
 		}
 	}
 
-	// if (myHand == nil) {
-	// 	return nil, errors.New("can't find my hand")
-	// }
+	if myHand == nil {
+		return nil, errors.New("Can't find my hand")
+	}
 
 	return &SerializableState{
 		Table:      &s.table,

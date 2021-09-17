@@ -3,8 +3,8 @@ import Face from "../../../components/Card/Face";
 import { useDurakCardDrop } from "../hooks";
 
   
-function DroppableFace({ onCardDrop, ...props }) {
-    const [{ isOver }, drop] = useDurakCardDrop(onCardDrop);
+function DroppableFace({place, ...props }) {
+    const [{ isOver }, drop] = useDurakCardDrop(place);
     return <Face
       ref={drop}
       style={isOver ? { "border": "2px solid black" } : {}}
@@ -12,21 +12,23 @@ function DroppableFace({ onCardDrop, ...props }) {
     />
 }
 
-export default function Table({ cards: cardsByPlace, onCardDrop }) {
-    const renderCards = function (cards) {
+const Table = ({ cards: cardsByPlace }) => {
+    const renderCards = function (cards, place) {
       const CardComponent = cards.length === 2 ? Face : DroppableFace;
       const classes = ['bottom', 'top'];
       
-      return <div className="card-placeholder">
+      return <div key={place} className="card-placeholder">
         {cards.map((card, key) =>
           <CardComponent
-            key={card}
-            onCardDrop={onCardDrop}
-            card={card}
+            key={`${card.suite}${card.rank}`} 
             className={classes[key]}
+            card={card}
+            place={place}
           />)
         }</div>;
     }
   
     return <div className="table">{cardsByPlace.map(renderCards)}</div>
   }
+
+  export default Table

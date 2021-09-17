@@ -17,15 +17,10 @@ export default function Durak() {
   const [error, setError] = useState(null);
   const [isReady, setIsReady] = useState(false);
   
+
+  const [{ isOver }, drop] = useDurakCardDrop();
   useDurak(setState, setError);
-
-  const createOnCardDrop = (val) => (card) => {
-    console.log(val);
-    console.log(card);
-  }
-
-  const [{ isOver }, drop] = useDurakCardDrop(createOnCardDrop('ON TABLE'));
-
+  
   if (error) {
     return <div style={{color: "red"}}>{error.message}</div>
   }
@@ -39,21 +34,25 @@ export default function Durak() {
     return "Waiting for other players to ready...";
   }
 
-  return <div className="durak">
+  return <div className="durak" >
     <div className="header">
-      <OtherHand count={state.hands[0]} />
+      <OtherHand count={state.hands[0] || 0} />
     </div>
 
-    <div ref={drop} className="game-table" style={isOver ? { "border": "2px solid black" } : {}}>
+    <div
+      className="game-table" 
+      ref={drop}
+      style={isOver ? { "border": "2px solid black" } : {}} 
+    >
       <div className="deck">
         <Back className="top-card" />
         <Face className="main-suite" card={state.trump_card} />
       </div>
-      <Table cards={state.table.cards || []} onCardDrop={createOnCardDrop('ON CARD')} />
+      <Table cards={state.table.cards || []} />
     </div>
 
     <div className="footer">
-      <MyHand cards={state.hand} />
+      <MyHand cards={state.hand || []} />
     </div>
   </div>;
 }
