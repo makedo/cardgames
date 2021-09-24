@@ -9,7 +9,7 @@ func (h *Hand) PopCardById(id int) (Card, bool) {
 	var popCard Card
 	var ok = false
 	for _, card := range h.Cards {
-		if (id != card.Id) {
+		if id != card.Id {
 			newCards = append(newCards, card)
 		} else {
 			ok = true
@@ -24,10 +24,14 @@ func (h *Hand) PopCardById(id int) (Card, bool) {
 
 func (h *Hand) GetCardById(id int) (*Card, bool) {
 	for _, card := range h.Cards {
-		if (id == card.Id) {
+		if id == card.Id {
 			return &card, true
 		}
 	}
 
 	return nil, false
+}
+
+func (h *Hand) AddCard(card Card) {
+	h.Cards = append(h.Cards, card)
 }

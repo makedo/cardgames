@@ -34,12 +34,14 @@ func (d *Deck) Shuffle() *Deck {
 	return d
 }
 
-func (d *Deck) Pop(amount int) []Card {
+func (d *Deck) Shift(amount int) []Card {
 	//TODO check if deck empty
-	var cards = d.Cards[:6]
-	d.Cards = d.Cards[6:len(d.Cards)]
+	var cards = d.Cards[:amount]
+	d.Cards = d.Cards[amount:len(d.Cards)]
 
-	return cards
+	var newCards = make([]Card, len(cards))
+	copy(newCards, cards)
+	return newCards
 }
 
 func (d *Deck) Last() *Card {

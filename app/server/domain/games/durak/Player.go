@@ -9,17 +9,27 @@ const (
 )
 
 type Player struct {
-	Id    string
-	Hand  *cards.Hand
-	Ready bool
-	State string
+	Id     string     `json:"id"`
+	Hand   cards.Hand `json:"hand"`
+	State  string     `json:"state"`
+	Ready  bool       `json:"ready"`
+	Winner bool       `json:"winner"`
+	Looser bool       `json:"looser"`
+}
+
+type OtherPlayer struct {
+	Id    string `json:"id"`
+	Hand  int    `json:"hand"`
+	State string `json:"state"`
 }
 
 func NewPlayer(id string) *Player {
 	return &Player{
-		Id:    id,
-		Ready: false,
-		State: PLAYER_STATE_IDLE,
+		Id:     id,
+		Ready:  false,
+		State:  PLAYER_STATE_IDLE,
+		Winner: false,
+		Looser: false,
 	}
 }
 
@@ -29,4 +39,12 @@ func (p *Player) IsAttaker() bool {
 
 func (p *Player) IsDefender() bool {
 	return p.State == PLAYER_STATE_DEFENDER
+}
+
+func (p *Player) ToOtherPlayer() *OtherPlayer {
+	return &OtherPlayer{
+		Id:    p.Id,
+		State: p.State,
+		Hand:  len(p.Hand.Cards),
+	}
 }

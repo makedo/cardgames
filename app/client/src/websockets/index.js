@@ -51,8 +51,6 @@ export function send(message) {
   }
   console.log("MESSAGE_SENT");
   console.log(message);
-  console.log(User.getId());
-  console.log(typeof User.getId());
 
   return socket.send(message);
 }

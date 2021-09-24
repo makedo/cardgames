@@ -7,6 +7,7 @@ const (
 	MESSAGE_TYPE_ERROR          string = "error"
 
 	MESSAGE_TYPE_READY string = "ready"
+	MESSAGE_TYPE_RESTART string = "restart"
 	MESSAGE_TYPE_STATE string = "state"
 
 	//@TODO those messages should go to durak package

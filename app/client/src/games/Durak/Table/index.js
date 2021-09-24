@@ -12,7 +12,9 @@ function DroppableFace({place, ...props }) {
     />
 }
 
-const Table = ({ cards: cardsByPlace }) => {
+const Table = ({ table }) => {
+    const cardsByPlace = table.cards;
+
     const renderCards = function (cards, place) {
       const CardComponent = cards.length === 2 ? Face : DroppableFace;
       const classes = ['bottom', 'top'];

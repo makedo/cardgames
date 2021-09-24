@@ -8,7 +8,7 @@ import (
 )
 
 const TIME_TO_WAIT_FOR_RECONNECT_SEC = 5
-const CARDS_IN_DECK = 36
+const CARDS_IN_DECK = 12
 
 type Handler struct {
 	state      *State
@@ -26,18 +26,15 @@ func NewHandler() *Handler {
 
 func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 	switch message.Type {
+
 	case websocket.MESSAGE_TYPE_CONNECTED:
 		fmt.Println("CONNECTED")
 		var playerId = client.Id
 		var _, hasPlayer = h.state.GetPlayer(playerId)
 
 		var timer, hasTimer = h.timers[playerId]
-		fmt.Println("TIMERS")
-		fmt.Println(h.timers)
 
 		if hasTimer {
-			fmt.Println("TIMER")
-			fmt.Println(h.timers)
 			timer.Stop()
 			delete(h.timers, playerId)
 		}
@@ -75,27 +72,53 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 
 	case websocket.MESSAGE_TYPE_READY:
 		var playerId = client.Id
-		var _, hasPlayer = h.state.GetPlayer(playerId)
+		var player, hasPlayer = h.state.GetPlayer(playerId)
 
 		if false == hasPlayer {
+			log.Fatal("Player not found")
 			return
 		}
 
 		if true == h.state.isStarted() {
+			log.Fatal("Game already started")
 			return
 		}
 
-		h.state.SetPlayerReady(client.Id)
-		if false == h.state.AreAllPlayersReady() || h.state.GetAmountOfPlayers() < h.maxPlayers {
+		if false == player.Ready {
+			h.state.SetPlayerReady(client.Id)
+		}
+
+		if h.state.AreAllPlayersReady() && h.state.GetAmountOfPlayers() == h.maxPlayers {
+			h.state.Start()
+		}
+
+		h.broadcastStateForAll(client.Pool)
+
+		return
+
+	case websocket.MESSAGE_TYPE_RESTART:
+		var playerId = client.Id
+		var player, hasPlayer = h.state.GetPlayer(playerId)
+
+		if false == hasPlayer {
+			log.Fatal("Player not found")
 			return
 		}
 
-		h.state.Start()
+		if true == h.state.isStarted() {
+			log.Fatal("Game already started")
+			return
+		}
 
-		for client, _ := range client.Pool.Clients {
-			if err := h.broadcastState(client); nil != err {
-				log.Fatal(err)
-			}
+		if false == player.Ready {
+			h.state.SetPlayerReady(client.Id)
+		}
+
+		if h.state.AreAllPlayersReady() && h.state.GetAmountOfPlayers() == h.maxPlayers {
+			h.state.Start()
+			h.broadcastStateForAll(client.Pool)
+		} else {
+			h.broadcastState(client)
 		}
 
 		return
@@ -122,12 +145,10 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		var placeData = data["place"]
 		if nil != placeData {
 			placeDataFloat, ok := placeData.(float64)
-			if !ok {
-				log.Printf("Got data of type %T but wanted int or null for place", placeDataFloat)
-				return
+			if ok {
+				var placeInt = int(placeDataFloat)
+				place = &placeInt
 			}
-			var placeInt = int(placeDataFloat)
-			place = &placeInt
 		}
 
 		var error = h.state.Move(playerId, int(cardIdInt), place)
@@ -136,11 +157,42 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 			return
 		}
 
-		for client, _ := range client.Pool.Clients {
-			if err := h.broadcastState(client); nil != err {
-				log.Fatal(err)
+		//@TODO calculate for more than 2 players
+		var player, _ = h.state.GetPlayer(playerId)
+
+		if len(h.state.deck.Cards) == 0 && len(player.Hand.Cards) == 0 {
+			for _, otherPlayer := range h.state.players {
+				if otherPlayer.Id == playerId {
+					otherPlayer.Winner = true
+				} else {
+					otherPlayer.Looser = true
+				}
 			}
+
+			h.broadcastStateForAll(client.Pool)
+			h.state = NewState(CARDS_IN_DECK, h.state.GetPlayers())
+		} else {
+			h.broadcastStateForAll(client.Pool)
 		}
+
+		return
+
+	case websocket.MESSAGE_TYPE_CONFIRM:
+		var playerId = client.Id
+		var player, hasPlayer = h.state.GetPlayer(playerId)
+
+		if false == hasPlayer {
+			return
+		}
+
+		err := h.state.Confirm(player)
+		if nil != err {
+			log.Println(err)
+			return
+		}
+
+		h.broadcastStateForAll(client.Pool)
+
 		return
 	}
 
@@ -191,4 +243,12 @@ func (h *Handler) broadcastState(client *websocket.Client) error {
 	client.Pool.BroadcastTo <- websocket.NewMessagePool(outBoundMessage, client)
 
 	return nil
+}
+
+func (h *Handler) broadcastStateForAll(pool *websocket.Pool) {
+	for client, _ := range pool.Clients {
+		if err := h.broadcastState(client); nil != err {
+			log.Fatal(err)
+		}
+	}
 }

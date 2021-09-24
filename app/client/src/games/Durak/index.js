@@ -1,21 +1,19 @@
 import React, { useState } from "react";
 
-import Face from "../../components/Card/Face";
-import Back from "../../components/Card/Back";
-
-import MyHand from "./Hand/My";
-import OtherHand from "./Hand/Other";
 import Table from "./Table";
 
-import { useDurakCardDrop, useDurak, onReady } from "./hooks";
+import { useDurakCardDrop, useDurak, onReady, onConfirm, onRestart } from "./hooks";
 
 import "./style.css";
+import Me from "./Player/Me";
+import OtherPlayer from "./Player/Other";
+import Deck from "./Deck";
+import Endgame from "./Endgame";
 
 export default function Durak() {
 
   const [state, setState] = useState(null);
   const [error, setError] = useState(null);
-  const [isReady, setIsReady] = useState(false);
   
 
   const [{ isOver }, drop] = useDurakCardDrop();
@@ -25,18 +23,17 @@ export default function Durak() {
     return <div style={{color: "red"}}>{error.message}</div>
   }
 
-  if (!state && !isReady) {
-    const onReadyClick = onReady(() => setIsReady(true))
-    return <button onClick={onReadyClick}>Ready</button>;
+  if (!state || (!state.me.ready && !state.started)) {
+    return <button onClick={onReady}>Ready</button>;
   }
 
-  if (!state && isReady) {
+  if (state.me.ready && !state.started) {
     return "Waiting for other players to ready...";
   }
 
   return <div className="durak" >
     <div className="header">
-      <OtherHand count={state.hands[0] || 0} />
+      <OtherPlayer player={state.players[0]} />
     </div>
 
     <div
@@ -44,16 +41,17 @@ export default function Durak() {
       ref={drop}
       style={isOver ? { "border": "2px solid black" } : {}} 
     >
-      <div className="deck">
-        <Back className="top-card" />
-        <Face className="main-suite" card={state.trump_card} />
-      </div>
-      <Table cards={state.table.cards || []} />
+      <Deck trump_card={state.trump_card} amount={state.deck_amount} />
+      <Table table={state.table || {}} />
+      {state.me.looser && "LOOOSER"}
+      {state.me.winner && "WINNER"}
     </div>
 
     <div className="footer">
-      <MyHand cards={state.hand || []} />
+      <Me player={state.me || {}} can_confirm={state.can_confirm || false} onConfirm={onConfirm} />
     </div>
+
+    <Endgame onClose={onRestart} me={state.me} />
   </div>;
 }
 
