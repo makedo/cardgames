@@ -53,7 +53,7 @@ func Websocket() func(http.ResponseWriter, *http.Request) {
 
 		var client = createClient(r, conn, pool)
 
-		go read(client)
+		read(client)
 	}
 }
 
