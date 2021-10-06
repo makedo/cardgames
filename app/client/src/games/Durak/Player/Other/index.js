@@ -13,8 +13,8 @@ export default function OtherPlayer({player}) {
   
   return <div>
     <Hand>{cards.map(c => c)}</Hand>
-    {player.state} <br/>
-    {player.confirmed && player.state == 'defender' && "TAKE"}
-    {player.confirmed && player.state != 'defender' && "CONFIRMED"}
+    {player.role} <br/>
+    {player.confirmed && player.role == 'defender' && "TAKE"}
+    {player.confirmed && player.role != 'defender' && "CONFIRMED"}
   </div>
 }

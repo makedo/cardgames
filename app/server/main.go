@@ -1,12 +1,11 @@
 package main
 
 import (
-	controllers "cardgames/app/http/controllers"
+	"cardgames/app/controllers"
 	"net/http"
 )
 
 func initRoutes() {
-	http.HandleFunc("/deck", controllers.GetDeck)
 	http.HandleFunc("/ws", controllers.Websocket())
 }
 

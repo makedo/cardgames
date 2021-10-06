@@ -11,10 +11,10 @@ function DraggableFace({card, ...props}) {
 
 export default function Me({me, can_confirm, finished, onConfirm, onRestart}) {
   return <div>
-    {me.state}
+    {me.role}
 
     {can_confirm && <button onClick={onConfirm}>
-      {me.state === 'defender' ? 'Take' : 'Confirm'}
+      {me.role === 'defender' ? 'Take' : 'Confirm'}
     </button>
     }
 

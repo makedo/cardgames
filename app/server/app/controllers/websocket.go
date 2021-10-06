@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"cardgames/app/websocket"
-	"cardgames/domain/games/durak"
+	"cardgames/app/games/durak"
 
 	"fmt"
 	"log"
@@ -20,25 +20,6 @@ var upgrader = gorillaWebsocket.Upgrader{
 
 var handler = durak.NewHandler() //@todo choose handler according to a game
 
-func read(client *websocket.Client) {
-
-	handler.Connect(client)
-	defer func() {
-		handler.Disconnect(client)
-	}()
-
-	for {
-		var message, err = client.Read()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		
-		fmt.Printf("Message Received: %+v\n", message)
-		handler.Handle(client, message)
-	}
-}
-
 func Websocket() func(http.ResponseWriter, *http.Request) {
 
 	pool := websocket.NewPool()
@@ -54,6 +35,25 @@ func Websocket() func(http.ResponseWriter, *http.Request) {
 		var client = createClient(r, conn, pool)
 
 		read(client)
+	}
+}
+
+func read(client *websocket.Client) {
+
+	handler.Connect(client)
+	defer func() {
+		handler.Disconnect(client)
+	}()
+
+	for {
+		var message, err = client.Read()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		fmt.Printf("Message Received: %+v\n", message)
+		handler.Handle(client, message)
 	}
 }
 

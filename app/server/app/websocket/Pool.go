@@ -8,18 +8,18 @@ type Pool struct {
 	Register    chan *Client
 	Unregister  chan *Client
 	Broadcast   chan Message
-	BroadcastTo chan MessagePool
+	BroadcastTo chan ClientsPool
 
 	Clients map[*Client]bool
 }
 
-type MessagePool struct {
+type ClientsPool struct {
 	Message Message
 	Clients []*Client
 }
 
-func NewMessagePool(message Message, clients ...*Client) *MessagePool {
-	return &MessagePool{
+func NewClientsPool(message Message, clients ...*Client) *ClientsPool {
+	return &ClientsPool{
 		Message: message,
 		Clients: clients,
 	}
@@ -30,7 +30,7 @@ func NewPool() *Pool {
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
 		Broadcast:   make(chan Message),
-		BroadcastTo: make(chan MessagePool),
+		BroadcastTo: make(chan ClientsPool),
 
 		Clients: make(map[*Client]bool),
 	}

@@ -9,7 +9,7 @@ import (
 
 const TIME_TO_WAIT_FOR_RECONNECT_SEC = 5
 const CARDS_IN_DECK = 36
-const MAX_PLAYERS = 4
+const MAX_PLAYERS = 3
 
 type Handler struct {
 	state      *State
@@ -53,7 +53,7 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 				Type: websocket.MESSAGE_TYPE_ERROR,
 				Data: map[string]interface{}{"message": "Game has been alreay started"},
 			}
-			client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
+			client.Pool.BroadcastTo <- *websocket.NewClientsPool(message, client)
 			return
 		}
 
@@ -62,7 +62,7 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 				Type: websocket.MESSAGE_TYPE_ERROR,
 				Data: map[string]interface{}{"message": "Too many players"},
 			}
-			client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
+			client.Pool.BroadcastTo <- *websocket.NewClientsPool(message, client)
 			return
 		}
 
@@ -71,7 +71,7 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 			Type: websocket.MESSAGE_TYPE_SELF_CONNECTED,
 			Data: map[string]interface{}{"playerId": client.Id},
 		}
-		client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
+		client.Pool.BroadcastTo <- *websocket.NewClientsPool(message, client)
 		break
 
 	case websocket.MESSAGE_TYPE_READY:
@@ -221,7 +221,7 @@ func (h *Handler) broadcastState(client *websocket.Client) error {
 		Data: serializableState,
 	}
 
-	client.Pool.BroadcastTo <- *websocket.NewMessagePool(outBoundMessage, client)
+	client.Pool.BroadcastTo <- *websocket.NewClientsPool(outBoundMessage, client)
 
 	return nil
 }

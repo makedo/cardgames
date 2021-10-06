@@ -1,7 +1,7 @@
 package durak
 
 import (
-	"cardgames/domain/cards"
+	"cardgames/app/games/cards"
 	"errors"
 	"fmt"
 )
@@ -35,7 +35,7 @@ func NewState(deckAmount int, players *PlayersCollection) *State {
 		player.Winner = false
 		player.Looser = false
 		player.Ready = false
-		player.State = PLAYER_STATE_IDLE
+		player.Role = PLAYER_ROLE_IDLE
 		player.Confirmed = false
 	})
 
@@ -54,13 +54,13 @@ func (s *State) Start() {
 
 	s.players.Each(func(player *Player) {
 		if 0 == i { //first
-			player.State = PLAYER_STATE_ATTAKER
+			player.Role = PLAYER_ROLE_ATTAKER
 		} else if 1 == i { //second
-			player.State = PLAYER_STATE_DEFENDER
+			player.Role = PLAYER_ROLE_DEFENDER
 		} else if (amount - 1) == i { //last
-			player.State = PLAYER_STATE_SUB_ATTAKER
+			player.Role = PLAYER_ROLE_SUB_ATTAKER
 		} else {
-			player.State = PLAYER_STATE_IDLE
+			player.Role = PLAYER_ROLE_IDLE
 		}
 
 		player.Hand = cards.Hand{Cards: s.deck.Shift(6)}
@@ -235,20 +235,20 @@ func (s *State) Confirm(player *Player) error {
 	var currentStep = 0
 	var stateChangeCallback = func(step int, player *Player) {
 		if player.Winner {
-			player.State = PLAYER_STATE_IDLE
+			player.Role = PLAYER_ROLE_IDLE
 			return
 		}
 
 		player.Confirmed = false
 		switch currentStep {
 		case 0:
-			player.State = PLAYER_STATE_ATTAKER
+			player.Role = PLAYER_ROLE_ATTAKER
 		case 1:
-			player.State = PLAYER_STATE_DEFENDER
+			player.Role = PLAYER_ROLE_DEFENDER
 		case 2:
-			player.State = PLAYER_STATE_SUB_ATTAKER
+			player.Role = PLAYER_ROLE_SUB_ATTAKER
 		default:
-			player.State = PLAYER_STATE_IDLE
+			player.Role = PLAYER_ROLE_IDLE
 		}
 		currentStep++
 	}
@@ -274,7 +274,7 @@ func (s *State) CanConfirm(player *Player) bool {
 		return false
 	}
 
-	if player.State == PLAYER_STATE_IDLE {
+	if player.Role == PLAYER_ROLE_IDLE {
 		fmt.Println("player is idle")
 		return false
 	}

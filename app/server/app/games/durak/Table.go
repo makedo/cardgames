@@ -1,7 +1,7 @@
 package durak
 
 import (
-	"cardgames/domain/cards"
+	"cardgames/app/games/cards"
 )
 
 type Table struct {

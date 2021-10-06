@@ -1,20 +1,20 @@
 package durak
 
 import (
-	"cardgames/domain/cards"
+	"cardgames/app/games/cards"
 )
 
 const (
-	PLAYER_STATE_ATTAKER     string = "attaker"
-	PLAYER_STATE_SUB_ATTAKER string = "sub_attaker"
-	PLAYER_STATE_DEFENDER    string = "defender"
-	PLAYER_STATE_IDLE        string = "idle"
+	PLAYER_ROLE_ATTAKER     string = "attaker"
+	PLAYER_ROLE_SUB_ATTAKER string = "sub_attaker"
+	PLAYER_ROLE_DEFENDER    string = "defender"
+	PLAYER_ROLE_IDLE        string = "idle"
 )
 
 type Player struct {
 	Id        string     `json:"id"`
 	Hand      cards.Hand `json:"hand"`
-	State     string     `json:"state"`
+	Role      string     `json:"role"`
 	Ready     bool       `json:"ready"`
 	Winner    bool       `json:"winner"`
 	Looser    bool       `json:"looser"`
@@ -24,7 +24,7 @@ type Player struct {
 type OtherPlayer struct {
 	Id        string `json:"id"`
 	Hand      int    `json:"hand"`
-	State     string `json:"state"`
+	Role      string `json:"role"`
 	Confirmed bool   `json:"confirmed"`
 	Winner    bool   `json:"winner"`
 	Looser    bool   `json:"looser"`
@@ -34,7 +34,7 @@ func NewPlayer(id string) *Player {
 	return &Player{
 		Id:        id,
 		Ready:     false,
-		State:     PLAYER_STATE_IDLE,
+		Role:     PLAYER_ROLE_IDLE,
 		Winner:    false,
 		Looser:    false,
 		Confirmed: false,
@@ -42,25 +42,25 @@ func NewPlayer(id string) *Player {
 }
 
 func (p *Player) IsAttaker() bool {
-	return p.State == PLAYER_STATE_ATTAKER || p.State == PLAYER_STATE_SUB_ATTAKER
+	return p.Role == PLAYER_ROLE_ATTAKER || p.Role == PLAYER_ROLE_SUB_ATTAKER
 }
 
 func (p *Player) IsSubAttaker() bool {
-	return p.State == PLAYER_STATE_SUB_ATTAKER
+	return p.Role == PLAYER_ROLE_SUB_ATTAKER
 }
 
 func (p *Player) IsDefender() bool {
-	return p.State == PLAYER_STATE_DEFENDER
+	return p.Role == PLAYER_ROLE_DEFENDER
 }
 
 func (p *Player) IsIdle() bool {
-	return p.State == PLAYER_STATE_IDLE
+	return p.Role == PLAYER_ROLE_IDLE
 }
 
 func (p *Player) ToOtherPlayer() *OtherPlayer {
 	return &OtherPlayer{
 		Id:        p.Id,
-		State:     p.State,
+		Role:     p.Role,
 		Hand:      len(p.Hand.Cards),
 		Confirmed: p.Confirmed,
 		Winner:    p.Winner,
