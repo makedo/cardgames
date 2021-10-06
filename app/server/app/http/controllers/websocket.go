@@ -33,9 +33,9 @@ func read(client *websocket.Client) {
 			log.Println(err)
 			return
 		}
-
-		handler.Handle(client, message)
+		
 		fmt.Printf("Message Received: %+v\n", message)
+		handler.Handle(client, message)
 	}
 }
 

@@ -8,7 +8,8 @@ import (
 )
 
 const TIME_TO_WAIT_FOR_RECONNECT_SEC = 5
-const CARDS_IN_DECK = 12
+const CARDS_IN_DECK = 36
+const MAX_PLAYERS = 4
 
 type Handler struct {
 	state      *State
@@ -18,20 +19,23 @@ type Handler struct {
 
 func NewHandler() *Handler {
 	return &Handler{
-		state:      NewState(CARDS_IN_DECK, []*Player{}),
-		maxPlayers: 2,
+		state:      NewState(CARDS_IN_DECK, NewPlayersCollection([]*Player{})),
+		maxPlayers: MAX_PLAYERS, //@TODO should be in state and set from client
 		timers:     make(map[string]*time.Timer),
 	}
 }
 
 func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
+
+	var playerId = client.Id
+	var player, hasPlayer = h.state.GetPlayer(playerId)
+	if false == hasPlayer && message.Type != websocket.MESSAGE_TYPE_CONNECTED {
+		log.Fatalln("Player not found!")
+		return
+	}
+
 	switch message.Type {
-
 	case websocket.MESSAGE_TYPE_CONNECTED:
-		fmt.Println("CONNECTED")
-		var playerId = client.Id
-		var _, hasPlayer = h.state.GetPlayer(playerId)
-
 		var timer, hasTimer = h.timers[playerId]
 
 		if hasTimer {
@@ -45,42 +49,34 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		}
 
 		if h.state.isStarted() && false == hasPlayer {
-			var message = &websocket.Message{
+			var message = websocket.Message{
 				Type: websocket.MESSAGE_TYPE_ERROR,
 				Data: map[string]interface{}{"message": "Game has been alreay started"},
 			}
-			client.Pool.BroadcastTo <- websocket.NewMessagePool(message, client)
+			client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
 			return
 		}
 
-		if h.state.GetAmountOfPlayers() > h.maxPlayers {
-			var message = &websocket.Message{
+		if h.state.GetAmountOfPlayers() >= h.maxPlayers {
+			var message = websocket.Message{
 				Type: websocket.MESSAGE_TYPE_ERROR,
 				Data: map[string]interface{}{"message": "Too many players"},
 			}
-			client.Pool.BroadcastTo <- websocket.NewMessagePool(message, client)
+			client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
 			return
 		}
 
 		h.state.AddPlayer(client.Id)
-		var message = &websocket.Message{
+		var message = websocket.Message{
 			Type: websocket.MESSAGE_TYPE_SELF_CONNECTED,
 			Data: map[string]interface{}{"playerId": client.Id},
 		}
-		client.Pool.BroadcastTo <- websocket.NewMessagePool(message, client)
+		client.Pool.BroadcastTo <- *websocket.NewMessagePool(message, client)
 		break
 
 	case websocket.MESSAGE_TYPE_READY:
-		var playerId = client.Id
-		var player, hasPlayer = h.state.GetPlayer(playerId)
-
-		if false == hasPlayer {
-			log.Fatal("Player not found")
-			return
-		}
-
 		if true == h.state.isStarted() {
-			log.Fatal("Game already started")
+			log.Println("Game already started")
 			return
 		}
 
@@ -97,16 +93,9 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		return
 
 	case websocket.MESSAGE_TYPE_RESTART:
-		var playerId = client.Id
-		var player, hasPlayer = h.state.GetPlayer(playerId)
-
-		if false == hasPlayer {
-			log.Fatal("Player not found")
-			return
-		}
 
 		if true == h.state.isStarted() {
-			log.Fatal("Game already started")
+			log.Println("Game did not finished")
 			return
 		}
 
@@ -124,7 +113,6 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		return
 
 	case websocket.MESSAGE_TYPE_MOVE:
-		var playerId = client.Id
 		var data = message.GetData()
 
 		//@TODO separate message type and cast map to type
@@ -134,7 +122,6 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 			log.Println("Wrong structure of move message")
 			return
 		}
-
 		cardIdInt, ok := cardId.(float64)
 		if !ok {
 			log.Printf("Got data of type %T but wanted int for card.id", cardIdInt)
@@ -158,30 +145,24 @@ func (h *Handler) Handle(client *websocket.Client, message *websocket.Message) {
 		}
 
 		//@TODO calculate for more than 2 players
-		var player, _ = h.state.GetPlayer(playerId)
+		var IsGameFinished, errorFinished = h.state.FinishGame(playerId)
+		if nil != errorFinished {
+			log.Println(errorFinished)
+			return
+		}
 
-		if len(h.state.deck.Cards) == 0 && len(player.Hand.Cards) == 0 {
-			for _, otherPlayer := range h.state.players {
-				if otherPlayer.Id == playerId {
-					otherPlayer.Winner = true
-				} else {
-					otherPlayer.Looser = true
-				}
-			}
-
-			h.broadcastStateForAll(client.Pool)
-			h.state = NewState(CARDS_IN_DECK, h.state.GetPlayers())
-		} else {
-			h.broadcastStateForAll(client.Pool)
+		h.broadcastStateForAll(client.Pool)
+		if IsGameFinished {
+			h.state = NewState(CARDS_IN_DECK, &h.state.players)
+			fmt.Println("NEW STATE")
 		}
 
 		return
 
 	case websocket.MESSAGE_TYPE_CONFIRM:
-		var playerId = client.Id
-		var player, hasPlayer = h.state.GetPlayer(playerId)
 
-		if false == hasPlayer {
+		if false == h.state.CanConfirm(player) {
+			log.Println("Player can not confirm")
 			return
 		}
 
@@ -213,7 +194,7 @@ func (h *Handler) Disconnect(client *websocket.Client) {
 			<-timer.C
 			fmt.Println("TIMER FIRED")
 			h.state.RemovePlayer(playerId)
-			h.state = NewState(CARDS_IN_DECK, h.state.GetPlayers())
+			h.state = NewState(CARDS_IN_DECK, &h.state.players)
 			//@TODO send RESTART message to other players
 		}()
 	}
@@ -235,12 +216,12 @@ func (h *Handler) broadcastState(client *websocket.Client) error {
 		return err
 	}
 
-	var outBoundMessage = &websocket.Message{
+	var outBoundMessage = websocket.Message{
 		Type: websocket.MESSAGE_TYPE_STATE,
 		Data: serializableState,
 	}
 
-	client.Pool.BroadcastTo <- websocket.NewMessagePool(outBoundMessage, client)
+	client.Pool.BroadcastTo <- *websocket.NewMessagePool(outBoundMessage, client)
 
 	return nil
 }

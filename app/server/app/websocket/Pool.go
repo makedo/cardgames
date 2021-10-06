@@ -8,17 +8,17 @@ type Pool struct {
 	Register    chan *Client
 	Unregister  chan *Client
 	Broadcast   chan Message
-	BroadcastTo chan *MessagePool
+	BroadcastTo chan MessagePool
 
 	Clients map[*Client]bool
 }
 
 type MessagePool struct {
-	Message *Message
+	Message Message
 	Clients []*Client
 }
 
-func NewMessagePool(message *Message, clients ...*Client) *MessagePool {
+func NewMessagePool(message Message, clients ...*Client) *MessagePool {
 	return &MessagePool{
 		Message: message,
 		Clients: clients,
@@ -30,7 +30,7 @@ func NewPool() *Pool {
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
 		Broadcast:   make(chan Message),
-		BroadcastTo: make(chan *MessagePool),
+		BroadcastTo: make(chan MessagePool),
 
 		Clients: make(map[*Client]bool),
 	}
@@ -76,7 +76,7 @@ func (pool *Pool) Listen() {
 		case messagePool := <-pool.BroadcastTo:
 			for _, client := range messagePool.Clients {
 				if true == pool.Clients[client] {
-					if err := client.Write(messagePool.Message); err != nil {
+					if err := client.Write(&messagePool.Message); err != nil {
 						fmt.Println(err)
 						return
 					}

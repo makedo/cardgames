@@ -9,18 +9,23 @@ function DraggableFace({card, ...props}) {
   return <Face ref={drag} card={card} {...props} />;
 }
 
-export default function Me({player, can_confirm, onConfirm}) {
+export default function Me({me, can_confirm, finished, onConfirm, onRestart}) {
   return <div>
-      {player.state}
+    {me.state}
 
-      {can_confirm && <button onClick={onConfirm}>
-        {player.state === 'attaker' ? 'Confirm' : 'Take'}
-        </button>
-      }
+    {can_confirm && <button onClick={onConfirm}>
+      {me.state === 'defender' ? 'Take' : 'Confirm'}
+    </button>
+    }
 
-      <Hand className="my">
-        {player.hand.cards && player.hand.cards.map(card =>
-            <DraggableFace card={card} key={`${card.suite}${card.rank}`} />)}
-        </Hand>
-      </div>;
+    {finished && <button onClick={onRestart}>Restart</button>}
+
+    <p>{me.winner && 'You win!'}</p>
+    <p>{me.looser && 'You loose!'}</p>
+
+    <Hand className="my">
+      {me.hand.cards && me.hand.cards.length > 0 && me.hand.cards.map(card =>
+        <DraggableFace card={card} key={`${card.suite}${card.rank}`} />)}
+    </Hand>
+  </div>;
 }

@@ -10,8 +10,11 @@ export default function OtherPlayer({player}) {
   for (let i = 0; i < player.hand; i++) {
     cards.push(<Back key={i} />);
   }
+  
   return <div>
     <Hand>{cards.map(c => c)}</Hand>
-    {player.state}
+    {player.state} <br/>
+    {player.confirmed && player.state == 'defender' && "TAKE"}
+    {player.confirmed && player.state != 'defender' && "CONFIRMED"}
   </div>
 }

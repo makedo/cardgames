@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 
-import Table from "./Table";
-
 import { useDurakCardDrop, useDurak, onReady, onConfirm, onRestart } from "./hooks";
 
 import "./style.css";
+
+import Table from "./Table";
 import Me from "./Player/Me";
 import OtherPlayer from "./Player/Other";
 import Deck from "./Deck";
-import Endgame from "./Endgame";
 
 export default function Durak() {
 
@@ -33,7 +32,9 @@ export default function Durak() {
 
   return <div className="durak" >
     <div className="header">
-      <OtherPlayer player={state.players[0]} />
+      {state.players.map((player, index) => {
+        return <OtherPlayer key={index} player={player} index={index} />
+      })}
     </div>
 
     <div
@@ -43,15 +44,17 @@ export default function Durak() {
     >
       <Deck trump_card={state.trump_card} amount={state.deck_amount} />
       <Table table={state.table || {}} />
-      {state.me.looser && "LOOOSER"}
-      {state.me.winner && "WINNER"}
     </div>
 
     <div className="footer">
-      <Me player={state.me || {}} can_confirm={state.can_confirm || false} onConfirm={onConfirm} />
+      <Me
+        me={state.me || {}}
+        can_confirm={state.can_confirm || false}
+        onConfirm={onConfirm}
+        finished={state.finished || false}
+        onRestart={onRestart}
+      />
     </div>
-
-    <Endgame onClose={onRestart} me={state.me} />
   </div>;
 }
 
