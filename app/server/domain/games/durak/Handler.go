@@ -227,7 +227,7 @@ func (h *Handler) broadcastState(client *websocket.Client) error {
 }
 
 func (h *Handler) broadcastStateForAll(pool *websocket.Pool) {
-	for client, _ := range pool.Clients {
+	for client := range pool.Clients {
 		if err := h.broadcastState(client); nil != err {
 			log.Fatal(err)
 		}

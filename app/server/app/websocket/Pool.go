@@ -44,7 +44,7 @@ func (pool *Pool) Listen() {
 				Type: MESSAGE_TYPE_CONNECTED,
 				Data: map[string]interface{}{"playerId": client.Id},
 			}
-			for client, _ := range pool.Clients {
+			for client := range pool.Clients {
 				client.Write(message)
 			}
 			pool.Clients[client] = true
@@ -59,13 +59,13 @@ func (pool *Pool) Listen() {
 				Type: MESSAGE_TYPE_DISCONNECTED,
 				Data: map[string]interface{}{"playerId": client.Id},
 			}
-			for client, _ := range pool.Clients {
+			for client := range pool.Clients {
 				client.Write(message)
 			}
 			break
 
 		case message := <-pool.Broadcast:
-			for client, _ := range pool.Clients {
+			for client := range pool.Clients {
 				if err := client.Write(&message); err != nil {
 					fmt.Println(err)
 					return
